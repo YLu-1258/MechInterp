@@ -24,11 +24,15 @@ const TokenHeatmap: React.FC<TokenHeatmapProps> = ({
     content: React.ReactNode;
   }>({ visible: false, x: 0, y: 0, content: null });
 
-  const maxAbs = Math.max(...attributionScores.map(Math.abs), 0.01);
+  const validScores = attributionScores.map(s => Number.isFinite(s) ? s : 0);
+  const minScore = Math.min(...validScores);
+  const maxScore = Math.max(...validScores);
+  const range = (maxScore - minScore) || 1;
 
   const handleMouseEnter = useCallback(
     (e: React.MouseEvent, idx: number) => {
       const rect = e.currentTarget.getBoundingClientRect();
+      const rawScore = validScores[idx];
       setTooltip({
         visible: true,
         x: rect.left + rect.width / 2,
@@ -42,13 +46,13 @@ const TokenHeatmap: React.FC<TokenHeatmapProps> = ({
               "{tokens[idx]}"
             </span>
             <span style={{ color: 'var(--mech-amber)' }}>
-              Score: {attributionScores[idx].toFixed(3)}
+              Score: {rawScore.toFixed(3)}
             </span>
           </div>
         ),
       });
     },
-    [tokens, attributionScores]
+    [tokens, validScores]
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -97,9 +101,12 @@ const TokenHeatmap: React.FC<TokenHeatmapProps> = ({
         }}
       >
         {tokens.map((token, idx) => {
+          const rawScore = validScores[idx];
+          const normalizedScore = (rawScore - minScore) / range;
+          
           const { color, glowIntensity, textColor } = attributionToAmber(
-            attributionScores[idx],
-            maxAbs
+            normalizedScore,
+            1.0
           );
           const isSelected = selectedPosition === idx;
 

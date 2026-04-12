@@ -5,6 +5,8 @@ import AttentionHeadGrid from './components/AttentionHeadGrid';
 import AttentionDetail from './components/AttentionDetail';
 import LogitLensPanel from './components/LogitLensPanel';
 import PatchDiffView from './components/PatchDiffView';
+import { useLogitLens } from './hooks/useLogitLens';
+import { useAnalyze } from './hooks/useAnalyze';
 import type { TabId, SupportedModel, SelectedHead } from './types';
 import {
   MOCK_TOKENS,
@@ -40,16 +42,26 @@ const App: React.FC = () => {
   // ── Tab State ──────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabId>('tokens');
 
-  // ── Analysis Data (mock) ───────────────────────
+  // ── Analysis Data (mock/real) ────────────────
   const [selectedToken, setSelectedToken] = useState<number | null>(null);
   const [selectedHead, setSelectedHead] = useState<SelectedHead | null>(null);
 
-  // ── Handlers ───────────────────────────────────
+  const logitLens = useLogitLens();
+  const analyze = useAnalyze();
+
+  // The backend already returns attention_patterns.data as a nested 4D array when serialized
+  const attentionPatterns = React.useMemo(() => {
+    if (!analyze.result?.attention_patterns) return MOCK_ATTENTION_PATTERNS;
+    return analyze.result.attention_patterns.data as unknown as number[][][][];
+  }, [analyze.result?.attention_patterns]);
+
   const handleAnalyze = useCallback(() => {
-    setIsLoading(true);
-    // Simulate a loading delay for the scan-line effect
-    setTimeout(() => setIsLoading(false), 1500);
-  }, []);
+    // Start WebSocket stream for Logit Lens
+    logitLens.startStreaming(prompt, model);
+    
+    // Start REST analyze
+    analyze.analyzePrompt(prompt, model);
+  }, [prompt, model, logitLens, analyze]);
 
   const handleTokenClick = useCallback((pos: number) => {
     setSelectedToken((prev) => (prev === pos ? null : pos));
@@ -65,6 +77,12 @@ const App: React.FC = () => {
     setSelectedHead(null);
   }, []);
 
+  // Use real data if available, fallback to mock
+  const tokens = analyze.result?.tokens || MOCK_TOKENS;
+  const attributionScores = analyze.result?.logit_attribution.by_token || MOCK_ATTRIBUTION_SCORES;
+  const modelInfo = analyze.result?.model_info || MOCK_MODEL_INFO;
+  const isAnyLoading = logitLens.isStreaming || analyze.isLoading;
+
   return (
     <div className="flex h-full w-full" style={{ background: 'var(--mech-bg)' }}>
       {/* ── Left Sidebar ────────────────────────────── */}
@@ -74,7 +92,7 @@ const App: React.FC = () => {
         prompt={prompt}
         onPromptChange={setPrompt}
         onAnalyze={handleAnalyze}
-        isLoading={isLoading}
+        isLoading={isAnyLoading}
         isDark={isDark}
         onToggleTheme={toggleTheme}
       />
@@ -102,7 +120,7 @@ const App: React.FC = () => {
               className="text-readout"
               style={{ color: 'var(--mech-text-dim)' }}
             >
-              {MOCK_MODEL_INFO.name}
+              {modelInfo.name}
             </span>
             <span
               className="text-readout"
@@ -114,7 +132,7 @@ const App: React.FC = () => {
                 fontSize: 9,
               }}
             >
-              {MOCK_MODEL_INFO.n_layers}L · {MOCK_MODEL_INFO.n_heads}H · {MOCK_MODEL_INFO.d_model}d
+              {modelInfo.n_layers}L · {modelInfo.n_heads}H · {modelInfo.d_model}d
             </span>
           </div>
         </nav>
@@ -124,21 +142,30 @@ const App: React.FC = () => {
           className="flex-1"
           style={{ overflow: 'auto', position: 'relative' }}
         >
+          {/* Analyze Error Message */}
+          {analyze.error && (
+            <div style={{ padding: 24, paddingBottom: 0 }}>
+              <div style={{ padding: 16, background: 'rgba(239, 83, 80, 0.1)', border: '1px solid var(--mech-red)', borderRadius: 8 }}>
+                <span className="font-mono text-readout" style={{ color: 'var(--mech-red)' }}>Error: {analyze.error}</span>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'tokens' && (
             <TokenHeatmap
-              tokens={MOCK_TOKENS}
-              attributionScores={MOCK_ATTRIBUTION_SCORES}
+              tokens={tokens}
+              attributionScores={attributionScores}
               selectedPosition={selectedToken}
               onTokenClick={handleTokenClick}
-              isLoading={isLoading}
+              isLoading={isAnyLoading}
             />
           )}
 
           {activeTab === 'heads' && (
             <AttentionHeadGrid
-              attentionPatterns={MOCK_ATTENTION_PATTERNS}
-              nLayers={MOCK_MODEL_INFO.n_layers}
-              nHeads={MOCK_MODEL_INFO.n_heads}
+              attentionPatterns={attentionPatterns}
+              nLayers={modelInfo.n_layers}
+              nHeads={modelInfo.n_heads}
               selectedHead={selectedHead}
               onHeadClick={handleHeadClick}
             />
@@ -146,16 +173,16 @@ const App: React.FC = () => {
 
           {activeTab === 'lens' && (
             <LogitLensPanel
-              frames={MOCK_LOGIT_LENS_FRAMES}
-              convergenceLayer={MOCK_CONVERGENCE_LAYER}
-              isStreaming={false}
+              frames={logitLens.frames.length > 0 ? logitLens.frames : MOCK_LOGIT_LENS_FRAMES}
+              convergenceLayer={logitLens.frames.length > 0 ? logitLens.convergenceLayer : MOCK_CONVERGENCE_LAYER}
+              isStreaming={logitLens.isStreaming}
             />
           )}
 
           {activeTab === 'patch' && (
             <PatchDiffView
-              nLayers={MOCK_MODEL_INFO.n_layers}
-              nHeads={MOCK_MODEL_INFO.n_heads}
+              nLayers={modelInfo.n_layers}
+              nHeads={modelInfo.n_heads}
             />
           )}
         </div>
@@ -163,8 +190,8 @@ const App: React.FC = () => {
         {/* ── Right Panel (Attention Detail) ──────────── */}
         {selectedHead && activeTab === 'heads' && (
           <AttentionDetail
-            pattern={MOCK_ATTENTION_PATTERNS[selectedHead.layer][selectedHead.head]}
-            tokens={MOCK_TOKENS}
+            pattern={attentionPatterns[selectedHead.layer][selectedHead.head]}
+            tokens={tokens}
             layer={selectedHead.layer}
             head={selectedHead.head}
             onClose={handleCloseDetail}
