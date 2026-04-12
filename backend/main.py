@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from analyzer import analyze
 from model_registry import get_model, get_supported_models
-from models import AnalyzeRequest, AnalyzeResponse, ErrorResponse
+from models import AnalyzeRequest, AnalyzeResponse, ErrorResponse, PatchRequest, PatchResponse
+from patcher import run_activation_patching
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -123,6 +124,76 @@ async def analyze_prompt(request: AnalyzeRequest) -> AnalyzeResponse:
         "POST /analyze | model=%s | tokens=%d | %.2fs",
         model_name,
         len(result.tokens),
+        elapsed,
+    )
+
+    return result
+
+
+@app.post(
+    "/patch",
+    response_model=PatchResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
+)
+async def patch_activations(request: PatchRequest) -> PatchResponse:
+    """Run head-level activation patching between source and target prompts.
+
+    Caches all attention head outputs from the source prompt, then for each
+    (layer, head) pair replaces that head's output in the target forward pass
+    and measures the change in answer-token logit (ΔLogit).
+    """
+    model_name = request.model.value
+    src_len = len(request.source_prompt)
+    tgt_len = len(request.target_prompt)
+
+    logger.info(
+        "POST /patch | model=%s | source_len=%d chars | target_len=%d chars",
+        model_name,
+        src_len,
+        tgt_len,
+    )
+    start = time.perf_counter()
+
+    # Load model (lazy + cached)
+    try:
+        model = get_model(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    # Run patching
+    try:
+        result = run_activation_patching(
+            model,
+            request.source_prompt,
+            request.target_prompt,
+            request.answer_tokens,
+        )
+    except ValueError as e:
+        # e.g. answer token not in vocabulary
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        error_msg = str(e).lower()
+        if "out of memory" in error_msg or "oom" in error_msg:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "GPU out of memory during patching. "
+                    "Try a shorter prompt or a smaller model (e.g. 'gpt2-small')."
+                ),
+            )
+        raise HTTPException(status_code=503, detail=f"Patching failed: {e}")
+
+    elapsed = time.perf_counter() - start
+    n_layers, n_heads = result.delta_logits.shape
+    logger.info(
+        "POST /patch | model=%s | patches=%d | %.2fs",
+        model_name,
+        n_layers * n_heads,
         elapsed,
     )
 

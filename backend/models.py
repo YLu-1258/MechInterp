@@ -21,7 +21,25 @@ class SupportedModel(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# Request schemas
+# Shared sub-schemas (referenced by both analyze and patch responses)
+# ---------------------------------------------------------------------------
+
+class ModelInfo(BaseModel):
+    """Metadata about the model used for a request."""
+    name: str
+    n_layers: int
+    n_heads: int
+    d_model: int
+
+
+class TensorData(BaseModel):
+    """Generic container for a serialized tensor with its shape."""
+    shape: list[int]
+    data: list[Any]
+
+
+# ---------------------------------------------------------------------------
+# Analyze schemas
 # ---------------------------------------------------------------------------
 
 class AnalyzeRequest(BaseModel):
@@ -41,18 +59,6 @@ class AnalyzeRequest(BaseModel):
         return v
 
 
-# ---------------------------------------------------------------------------
-# Response sub-schemas
-# ---------------------------------------------------------------------------
-
-class ModelInfo(BaseModel):
-    """Metadata about the model used for analysis."""
-    name: str
-    n_layers: int
-    n_heads: int
-    d_model: int
-
-
 class LogitAttribution(BaseModel):
     """Direct logit attribution scores."""
     by_component: dict[str, Any] = Field(
@@ -65,16 +71,6 @@ class LogitAttribution(BaseModel):
     )
 
 
-class TensorData(BaseModel):
-    """Generic container for a serialized tensor with its shape."""
-    shape: list[int]
-    data: list[Any]
-
-
-# ---------------------------------------------------------------------------
-# Top-level response
-# ---------------------------------------------------------------------------
-
 class AnalyzeResponse(BaseModel):
     """Response body for POST /analyze."""
     tokens: list[str] = Field(..., description="Human-readable token strings")
@@ -84,6 +80,61 @@ class AnalyzeResponse(BaseModel):
     residual_stream: TensorData
     model_info: ModelInfo
 
+
+# ---------------------------------------------------------------------------
+# Patch schemas
+# ---------------------------------------------------------------------------
+
+class AnswerTokens(BaseModel):
+    """Pair of token strings used for logit-difference scoring."""
+    correct: str = Field(..., description="The correct answer token string (e.g. ' Mary')")
+    incorrect: str = Field(..., description="The incorrect answer token string (e.g. ' John')")
+
+
+class PatchRequest(BaseModel):
+    """Request body for POST /patch."""
+    source_prompt: str = Field(..., description="Source prompt whose activations are cached")
+    target_prompt: str = Field(..., description="Target prompt to run patching on")
+    model: SupportedModel = Field(
+        default=SupportedModel.GPT2_SMALL,
+        description="Model to use for patching",
+    )
+    answer_tokens: AnswerTokens | None = Field(
+        default=None,
+        description="Optional correct/incorrect token pair for logit-difference scoring",
+    )
+
+    @field_validator("source_prompt", "target_prompt")
+    @classmethod
+    def prompt_must_be_non_empty(cls, v: str) -> str:
+        """Validate that neither prompt is empty or whitespace-only."""
+        if not v.strip():
+            raise ValueError("Prompt must be a non-empty string")
+        return v
+
+
+class PatchResponse(BaseModel):
+    """Response body for POST /patch."""
+    delta_logits: TensorData = Field(
+        ...,
+        description="ΔLogit matrix of shape [n_layers, n_heads]",
+    )
+    source_tokens: list[str] = Field(
+        ..., description="Tokenized source prompt as human-readable strings"
+    )
+    target_tokens: list[str] = Field(
+        ..., description="Tokenized target prompt as human-readable strings"
+    )
+    answer_token_info: dict[str, Any] | None = Field(
+        default=None,
+        description="Token IDs and clean logit info for the answer tokens",
+    )
+    model_info: ModelInfo
+
+
+# ---------------------------------------------------------------------------
+# Error schema
+# ---------------------------------------------------------------------------
 
 class ErrorResponse(BaseModel):
     """Standard error response body."""
