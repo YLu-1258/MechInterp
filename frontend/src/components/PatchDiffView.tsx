@@ -1,31 +1,35 @@
 import React, { useState, useCallback } from 'react';
 import Tooltip from './Tooltip';
 import { deltaLogitToColor } from '../utils/colorScale';
-import {
-  MOCK_PATCH_SOURCE_PROMPT,
-  MOCK_PATCH_TARGET_PROMPT,
-  MOCK_PATCH_CORRECT_TOKEN,
-  MOCK_PATCH_INCORRECT_TOKEN,
-  MOCK_DELTA_LOGITS,
-  MOCK_CLEAN_LOGIT_DIFF,
-} from '../mockData';
+import { usePatch } from '../hooks/usePatch';
+import type { SupportedModel } from '../types';
+
+const DEFAULT_SOURCE_PROMPT = 'When Mary and John went to the store, John gave a drink to';
+const DEFAULT_TARGET_PROMPT = 'When John and Mary went to the store, Mary gave a drink to';
+const DEFAULT_CORRECT_TOKEN = ' Mary';
+const DEFAULT_INCORRECT_TOKEN = ' John';
 
 interface PatchDiffViewProps {
   nLayers: number;
   nHeads: number;
+  model: SupportedModel;
 }
 
 const PatchDiffView: React.FC<PatchDiffViewProps> = ({
   nLayers,
   nHeads,
+  model,
 }) => {
-  const [sourcePrompt, setSourcePrompt] = useState(MOCK_PATCH_SOURCE_PROMPT);
-  const [targetPrompt, setTargetPrompt] = useState(MOCK_PATCH_TARGET_PROMPT);
-  const [correctToken, setCorrectToken] = useState(MOCK_PATCH_CORRECT_TOKEN);
-  const [incorrectToken, setIncorrectToken] = useState(MOCK_PATCH_INCORRECT_TOKEN);
+  const [sourcePrompt, setSourcePrompt] = useState(DEFAULT_SOURCE_PROMPT);
+  const [targetPrompt, setTargetPrompt] = useState(DEFAULT_TARGET_PROMPT);
+  const [correctToken, setCorrectToken] = useState(DEFAULT_CORRECT_TOKEN);
+  const [incorrectToken, setIncorrectToken] = useState(DEFAULT_INCORRECT_TOKEN);
   const [threshold, setThreshold] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [deltaLogits] = useState<number[][]>(MOCK_DELTA_LOGITS);
+
+  const patchLogic = usePatch();
+  const isLoading = patchLogic.isLoading;
+  const deltaLogits = patchLogic.result?.delta_logits.data as unknown as number[][] || [];
+
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     x: number;
@@ -35,6 +39,7 @@ const PatchDiffView: React.FC<PatchDiffViewProps> = ({
 
   // Compute max absolute ΔLogit for color normalization
   const maxAbs = React.useMemo(() => {
+    if (deltaLogits.length === 0) return 0;
     let max = 0;
     for (const row of deltaLogits) {
       for (const v of row) {
@@ -57,10 +62,11 @@ const PatchDiffView: React.FC<PatchDiffViewProps> = ({
   }, [deltaLogits, threshold]);
 
   const handleRunPatch = useCallback(() => {
-    setIsLoading(true);
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 2000);
-  }, []);
+    patchLogic.runPatching(sourcePrompt, targetPrompt, model, {
+      correct: correctToken,
+      incorrect: incorrectToken,
+    });
+  }, [patchLogic, sourcePrompt, targetPrompt, model, correctToken, incorrectToken]);
 
   const handleMouseEnter = useCallback(
     (e: React.MouseEvent, layer: number, head: number, value: number) => {
@@ -337,7 +343,7 @@ const PatchDiffView: React.FC<PatchDiffViewProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-label">Clean ΔLogit:</span>
             <span className="text-readout" style={{ color: 'var(--mech-accent)', fontWeight: 700 }}>
-              {MOCK_CLEAN_LOGIT_DIFF.toFixed(2)}
+              {(patchLogic.result?.answer_token_info?.clean_logit_diff as number)?.toFixed(2) ?? '0.00'}
             </span>
           </div>
           <div className="flex items-center gap-3">

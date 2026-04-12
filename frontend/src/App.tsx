@@ -8,14 +8,12 @@ import PatchDiffView from './components/PatchDiffView';
 import { useLogitLens } from './hooks/useLogitLens';
 import { useAnalyze } from './hooks/useAnalyze';
 import type { TabId, SupportedModel, SelectedHead } from './types';
-import {
-  MOCK_TOKENS,
-  MOCK_ATTRIBUTION_SCORES,
-  MOCK_ATTENTION_PATTERNS,
-  MOCK_LOGIT_LENS_FRAMES,
-  MOCK_CONVERGENCE_LAYER,
-  MOCK_MODEL_INFO,
-} from './mockData';
+const DEFAULT_MODEL_INFO = {
+  name: 'Ready for Analysis',
+  n_layers: 12,
+  n_heads: 12,
+  d_model: 768,
+};
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'tokens', label: 'Tokens' },
@@ -51,7 +49,7 @@ const App: React.FC = () => {
 
   // The backend already returns attention_patterns.data as a nested 4D array when serialized
   const attentionPatterns = React.useMemo(() => {
-    if (!analyze.result?.attention_patterns) return MOCK_ATTENTION_PATTERNS;
+    if (!analyze.result?.attention_patterns) return [];
     return analyze.result.attention_patterns.data as unknown as number[][][][];
   }, [analyze.result?.attention_patterns]);
 
@@ -77,10 +75,10 @@ const App: React.FC = () => {
     setSelectedHead(null);
   }, []);
 
-  // Use real data if available, fallback to mock
-  const tokens = analyze.result?.tokens || MOCK_TOKENS;
-  const attributionScores = analyze.result?.logit_attribution.by_token || MOCK_ATTRIBUTION_SCORES;
-  const modelInfo = analyze.result?.model_info || MOCK_MODEL_INFO;
+  // Use real data if available, fallback to empty arrays
+  const tokens = analyze.result?.tokens || [];
+  const attributionScores = analyze.result?.logit_attribution.by_token || [];
+  const modelInfo = analyze.result?.model_info || DEFAULT_MODEL_INFO;
   const isAnyLoading = logitLens.isStreaming || analyze.isLoading;
 
   return (
@@ -173,8 +171,8 @@ const App: React.FC = () => {
 
           {activeTab === 'lens' && (
             <LogitLensPanel
-              frames={logitLens.frames.length > 0 ? logitLens.frames : MOCK_LOGIT_LENS_FRAMES}
-              convergenceLayer={logitLens.frames.length > 0 ? logitLens.convergenceLayer : MOCK_CONVERGENCE_LAYER}
+              frames={logitLens.frames}
+              convergenceLayer={logitLens.convergenceLayer}
               isStreaming={logitLens.isStreaming}
             />
           )}
@@ -183,6 +181,7 @@ const App: React.FC = () => {
             <PatchDiffView
               nLayers={modelInfo.n_layers}
               nHeads={modelInfo.n_heads}
+              model={model}
             />
           )}
         </div>
@@ -190,7 +189,7 @@ const App: React.FC = () => {
         {/* ── Right Panel (Attention Detail) ──────────── */}
         {selectedHead && activeTab === 'heads' && (
           <AttentionDetail
-            pattern={attentionPatterns[selectedHead.layer][selectedHead.head]}
+            pattern={attentionPatterns[selectedHead.layer]?.[selectedHead.head] || []}
             tokens={tokens}
             layer={selectedHead.layer}
             head={selectedHead.head}
