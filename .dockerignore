@@ -1,0 +1,11 @@
+.git
+.gitignore
+.dockerignore
+node_modules/
+backend/.venv
+frontend/dist/
+frontend/node_modules/
+tests/
+.design/
+*.md
+Makefile

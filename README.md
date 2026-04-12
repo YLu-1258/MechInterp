@@ -37,10 +37,35 @@ The repository is logically separated into the API backend, specialized GPU kern
 - `frontend/`: The React web interface consisting of D3.js-powered visualizers for the various interpretability techniques.
 - `scripts/`: Optimization and profiling scripts to validate the latency and occupancy of the compiled CUDA implementations.
 
-## Deployment
+## Setup and Deployment
 
-The application is containerized for streamlined deployment. Running the default compose configuration starts the backend API and serves the frontend interface locally. Model weights are automatically cached inside a Docker volume to eliminate redundant network requests.
+### Production via Docker
+
+The application is containerized into a single, unified Docker image. The build process compiles the frontend and serves it directly through the FastAPI backend. 
 
 ```bash
-docker-compose up --build
+docker build -t mech-interp .
+docker run -p 8000:8000 mech-interp
 ```
+Once running, the interface will be available at `http://localhost:8000`.
+
+### Local Development
+
+For building and iterating rapidly without containers, a `Makefile` is provided to streamline the installation of Python and Node environments.
+
+1. **Install dependencies (Sets up a Python venv and runs `npm install`):**
+   ```bash
+   make install
+   ```
+
+2. **Start the development servers (Runs FastAPI Uvicorn and Vite concurrently):**
+   ```bash
+   make dev
+   ```
+   *Frontend development server:* `http://localhost:5173`
+   *Backend API:* `http://localhost:8000`
+
+3. **Build frontend for production:**
+   ```bash
+   make build
+   ```
