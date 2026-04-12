@@ -35,7 +35,6 @@ const App: React.FC = () => {
   // ── Sidebar State ──────────────────────────────
   const [model, setModel] = useState<SupportedModel>('gpt2-small');
   const [prompt, setPrompt] = useState('The capital of France is');
-  const [isLoading, setIsLoading] = useState(false);
 
   // ── Tab State ──────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabId>('tokens');
