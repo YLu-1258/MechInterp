@@ -1,0 +1,459 @@
+@import "tailwindcss";
+
+/* ========================================================================
+   INSTRUMENT.CSS — Mechanistic Interpretability Toolkit Design System
+   Scientific instrument meets high-end developer tool.
+   ======================================================================== */
+
+/* ── Google Fonts (loaded via index.html) ──────────────────────────────── */
+@theme {
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-bg-dark: #0e0e10;
+  --color-bg-light: #f4f2ee;
+  --color-accent-blue: #4fc3f7;
+  --color-accent-amber: #ffb74d;
+  --color-accent-red: #ef5350;
+  --color-surface-dark: #1a1a1f;
+  --color-surface-light: #e8e6e1;
+  --color-text-primary-dark: #e4e4e7;
+  --color-text-secondary-dark: #71717a;
+  --color-text-primary-light: #18181b;
+  --color-text-secondary-light: #71717a;
+  --color-border-dark: #27272a;
+  --color-border-light: #d4d4d8;
+}
+
+/* ── CSS Custom Properties (theme-aware) ──────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --mech-bg: #0e0e10;
+  --mech-surface: #1a1a1f;
+  --mech-surface-raised: #222228;
+  --mech-surface-hover: #2a2a30;
+  --mech-text: #e4e4e7;
+  --mech-text-secondary: #71717a;
+  --mech-text-dim: #52525b;
+  --mech-border: #27272a;
+  --mech-border-subtle: #1f1f23;
+  --mech-accent: #4fc3f7;
+  --mech-accent-dim: rgba(79, 195, 247, 0.15);
+  --mech-amber: #ffb74d;
+  --mech-amber-dim: rgba(255, 183, 77, 0.15);
+  --mech-red: #ef5350;
+  --mech-red-dim: rgba(239, 83, 80, 0.15);
+  --mech-blue-positive: #42a5f5;
+  --mech-red-negative: #ef5350;
+  --mech-grain-opacity: 0.03;
+  --mech-scrollbar-track: #18181b;
+  --mech-scrollbar-thumb: #3f3f46;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --mech-bg: #f4f2ee;
+  --mech-surface: #e8e6e1;
+  --mech-surface-raised: #dcdad5;
+  --mech-surface-hover: #d0cec9;
+  --mech-text: #18181b;
+  --mech-text-secondary: #52525b;
+  --mech-text-dim: #a1a1aa;
+  --mech-border: #d4d4d8;
+  --mech-border-subtle: #e4e4e7;
+  --mech-accent: #0288d1;
+  --mech-accent-dim: rgba(2, 136, 209, 0.1);
+  --mech-amber: #e65100;
+  --mech-amber-dim: rgba(230, 81, 0, 0.1);
+  --mech-red: #c62828;
+  --mech-red-dim: rgba(198, 40, 40, 0.1);
+  --mech-blue-positive: #1565c0;
+  --mech-red-negative: #c62828;
+  --mech-grain-opacity: 0.04;
+  --mech-scrollbar-track: #e8e6e1;
+  --mech-scrollbar-thumb: #a1a1aa;
+  color-scheme: light;
+}
+
+/* ── Base Reset & Body ─────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--mech-bg);
+  color: var(--mech-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Brushed Metal Texture ─────────────────────────────────────────────── */
+/* Fine horizontal grain like anodized aluminum — matte, industrial */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: var(--mech-grain-opacity);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(255, 255, 255, 0.03) 1px,
+      rgba(255, 255, 255, 0.03) 2px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.015) 2px,
+      rgba(255, 255, 255, 0.015) 4px
+    );
+  background-size: 4px 4px, 4px 4px;
+}
+
+/* ── Scrollbar Styling ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--mech-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mech-scrollbar-thumb);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mech-text-secondary);
+}
+
+/* ── Typography Classes ────────────────────────────────────────────────── */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.text-readout {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mech-text-secondary);
+}
+
+/* ── Universal Transition ──────────────────────────────────────────────── */
+button, input, textarea, select,
+[role="button"], a, .transition-all {
+  transition: all 200ms ease;
+}
+
+/* ── Glow System ───────────────────────────────────────────────────────── */
+/* Glows encode information — they are not decorative */
+
+.glow-amber {
+  box-shadow:
+    0 0 calc(4px * var(--glow-intensity, 0)) rgba(255, 183, 77, calc(0.3 * var(--glow-intensity, 0))),
+    0 0 calc(12px * var(--glow-intensity, 0)) rgba(255, 183, 77, calc(0.15 * var(--glow-intensity, 0))),
+    0 0 calc(24px * var(--glow-intensity, 0)) rgba(255, 183, 77, calc(0.07 * var(--glow-intensity, 0)));
+}
+
+.glow-blue {
+  box-shadow:
+    0 0 calc(4px * var(--glow-intensity, 0)) rgba(79, 195, 247, calc(0.3 * var(--glow-intensity, 0))),
+    0 0 calc(12px * var(--glow-intensity, 0)) rgba(79, 195, 247, calc(0.15 * var(--glow-intensity, 0))),
+    0 0 calc(24px * var(--glow-intensity, 0)) rgba(79, 195, 247, calc(0.07 * var(--glow-intensity, 0)));
+}
+
+.glow-red {
+  box-shadow:
+    0 0 calc(4px * var(--glow-intensity, 0)) rgba(239, 83, 80, calc(0.3 * var(--glow-intensity, 0))),
+    0 0 calc(12px * var(--glow-intensity, 0)) rgba(239, 83, 80, calc(0.15 * var(--glow-intensity, 0))),
+    0 0 calc(24px * var(--glow-intensity, 0)) rgba(239, 83, 80, calc(0.07 * var(--glow-intensity, 0)));
+}
+
+.glow-error {
+  box-shadow:
+    0 0 8px rgba(239, 83, 80, 0.4),
+    0 0 24px rgba(239, 83, 80, 0.2);
+}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+
+/* Scan-line loader: a thin bright line sweeping left to right */
+@keyframes scanline {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.scanline-loader {
+  position: relative;
+  overflow: hidden;
+}
+.scanline-loader::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--mech-accent) 40%,
+    var(--mech-accent) 60%,
+    transparent 100%
+  );
+  animation: scanline 1.5s ease-in-out infinite;
+}
+
+/* Pulse halo for selected token */
+@keyframes pulse-halo {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px var(--mech-accent),
+      0 0 8px rgba(79, 195, 247, 0.3),
+      0 0 16px rgba(79, 195, 247, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--mech-accent),
+      0 0 12px rgba(79, 195, 247, 0.5),
+      0 0 24px rgba(79, 195, 247, 0.2);
+  }
+}
+
+.pulse-selected {
+  animation: pulse-halo 2s ease-in-out infinite;
+}
+
+/* Fade-in for streaming rows */
+@keyframes fade-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-slide-in 300ms ease forwards;
+  opacity: 0;
+}
+
+/* Convergence glow pulse */
+@keyframes convergence-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 3px 0 0 var(--mech-accent),
+      0 0 8px rgba(79, 195, 247, 0.15);
+  }
+  50% {
+    box-shadow:
+      inset 3px 0 0 var(--mech-accent),
+      0 0 16px rgba(79, 195, 247, 0.3);
+  }
+}
+
+.convergence-glow {
+  animation: convergence-pulse 2s ease-in-out infinite;
+}
+
+/* Panel slide-in from right */
+@keyframes slide-in-right {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+@keyframes slide-out-right {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+.panel-enter {
+  animation: slide-in-right 250ms ease forwards;
+}
+.panel-exit {
+  animation: slide-out-right 200ms ease forwards;
+}
+
+/* ── Form Elements ─────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--mech-surface);
+  color: var(--mech-text);
+  border: 1px solid var(--mech-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  outline: none;
+  width: 100%;
+  resize: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--mech-accent);
+  box-shadow: 0 0 0 1px var(--mech-accent-dim);
+}
+
+/* ── Button Styles ─────────────────────────────────────────────────────── */
+.btn-primary {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mech-bg);
+  background: var(--mech-accent);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+
+/* ── Tooltip ───────────────────────────────────────────────────────────── */
+.tooltip {
+  position: fixed;
+  z-index: 10000;
+  padding: 6px 10px;
+  background: var(--mech-surface-raised);
+  border: 1px solid var(--mech-border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--mech-text);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+/* ── Tab Bar ───────────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--mech-border);
+  padding: 0 16px;
+  background: var(--mech-surface);
+}
+
+.tab-item {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mech-text-secondary);
+  padding: 12px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  position: relative;
+}
+.tab-item:hover {
+  color: var(--mech-text);
+}
+.tab-item.active {
+  color: var(--mech-accent);
+}
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--mech-accent);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(79, 195, 247, 0.4);
+}
+
+/* ── Theme Toggle Switch ───────────────────────────────────────────────── */
+.theme-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--mech-surface);
+  border: 1px solid var(--mech-border);
+  cursor: pointer;
+  transition: all 200ms ease;
+  flex-shrink: 0;
+}
+.theme-switch:hover {
+  border-color: var(--mech-text-secondary);
+}
+.theme-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--mech-accent);
+  transition: transform 200ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+.theme-switch-knob.light {
+  transform: translateX(22px);
+}
+
+/* ── Utility Classes ───────────────────────────────────────────────────── */
+.glass {
+  background: rgba(26, 26, 31, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(244, 242, 238, 0.85);
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
