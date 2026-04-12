@@ -72,6 +72,7 @@ const LogitLensPanel: React.FC<LogitLensPanelProps> = ({
               key={frame.layer}
               className={isConvergence ? 'convergence-glow' : 'fade-in'}
               style={{
+                flexShrink: 0,
                 animationDelay: isConvergence ? undefined : `${idx * 80}ms`,
                 display: 'flex',
                 flexDirection: 'column',

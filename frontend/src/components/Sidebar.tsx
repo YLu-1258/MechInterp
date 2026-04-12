@@ -16,8 +16,8 @@ interface SidebarProps {
 const MODELS: { value: SupportedModel; label: string }[] = [
   { value: 'gpt2-small', label: 'GPT-2 Small' },
   { value: 'gpt2-medium', label: 'GPT-2 Medium' },
-  { value: 'qwen3-0.5b', label: 'Qwen3 0.5B' },
-  { value: 'qwen3-1.5b', label: 'Qwen3 1.5B' },
+  { value: 'qwen3-0.6b', label: 'Qwen3 0.6B' },
+  { value: 'qwen3-1.7b', label: 'Qwen3 1.7B' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({

@@ -54,7 +54,7 @@ export interface LogitLensDone {
   total_layers: number;
 }
 
-export type SupportedModel = 'gpt2-small' | 'gpt2-medium' | 'qwen3-0.5b' | 'qwen3-1.5b';
+export type SupportedModel = 'gpt2-small' | 'gpt2-medium' | 'qwen3-0.6b' | 'qwen3-1.7b';
 
 export type TabId = 'tokens' | 'heads' | 'lens' | 'patch';
 
