@@ -16,8 +16,8 @@ class SupportedModel(str, Enum):
     """Enumeration of model names accepted by the API."""
     GPT2_SMALL = "gpt2-small"
     GPT2_MEDIUM = "gpt2-medium"
-    QWEN3_05B = "qwen3-0.5b"
-    QWEN3_15B = "qwen3-1.5b"
+    QWEN3_06B = "qwen3-0.6b"
+    QWEN3_17B = "qwen3-1.7b"
 
 
 # ---------------------------------------------------------------------------

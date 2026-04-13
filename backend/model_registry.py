@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 MODEL_MAP: dict[str, str] = {
     "gpt2-small": "gpt2-small",
     "gpt2-medium": "gpt2-medium",
-    "qwen3-0.5b": "Qwen/Qwen3-0.5B",
-    "qwen3-1.5b": "Qwen/Qwen3-1.5B",
+    "qwen3-0.6b": "Qwen/Qwen3-0.6B-Base",
+    "qwen3-1.7b": "Qwen/Qwen3-1.7B",
 }
 
 # ---------------------------------------------------------------------------

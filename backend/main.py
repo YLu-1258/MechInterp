@@ -10,6 +10,9 @@ import torch
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 from analyzer import analyze
 from logit_lens import compute_logit_lens_at_layer, detect_convergence
@@ -54,14 +57,14 @@ app.add_middleware(
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok"}
 
 
 @app.post(
-    "/analyze",
+    "/api/analyze",
     response_model=AnalyzeResponse,
     responses={
         400: {"model": ErrorResponse},
@@ -138,7 +141,7 @@ async def analyze_prompt(request: AnalyzeRequest) -> AnalyzeResponse:
 
 
 @app.post(
-    "/patch",
+    "/api/patch",
     response_model=PatchResponse,
     responses={
         400: {"model": ErrorResponse},
@@ -211,7 +214,7 @@ async def patch_activations(request: PatchRequest) -> PatchResponse:
 # WebSocket: /logit-lens
 # ---------------------------------------------------------------------------
 
-@app.websocket("/logit-lens")
+@app.websocket("/ws/logit-lens")
 async def logit_lens_stream(websocket: WebSocket) -> None:
     """Stream logit lens projections layer-by-layer over a WebSocket.
 
@@ -436,3 +439,18 @@ async def logit_lens_stream(websocket: WebSocket) -> None:
 async def value_error_handler(request, exc: ValueError):
     """Handle validation errors that escape route handlers."""
     return HTTPException(status_code=400, detail=str(exc))
+
+# ---------------------------------------------------------------------------
+# Static SPA Serving
+# ---------------------------------------------------------------------------
+
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+if os.path.isdir(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        filepath = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(filepath):
+            return FileResponse(filepath)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
